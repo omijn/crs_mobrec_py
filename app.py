@@ -16,7 +16,7 @@ import json
 
 app = Flask(__name__)
 
-def deviceInfo(phone):
+def deviceInfo(phone, resolvedQuery):
     # I may need to replace spaces in the search string with + signs
     
     payload = {'sQuickSearch': 'yes', 'sName': phone}
@@ -28,6 +28,8 @@ def deviceInfo(phone):
     if soup.find(class_="makers"): rawSearchResults = soup.find(class_="makers").ul.find_all("li")
     else: return {"speech": "No results found.", "displayText": "No results found.", "data": {}, "source": "GSMArena"}
     
+    # issue: some searches go directly to the device info page, invalidating the above html parsing: eg. nexus 6p
+    
     searchResults = []    
     for rawSearchResult in rawSearchResults[:3]:
         searchResult = {}
@@ -38,7 +40,9 @@ def deviceInfo(phone):
         
         searchResults.append(searchResult)       
     
-    topResult = searchResults[0]    
+    if searchResults: topResult = searchResults[0]
+#     else: return {"speech": "No results found.", "displayText": "No results found.", "data": {}, "source": "GSMArena"}
+    else: return paramExtractor(resolvedQuery)
     
     # build api.ai response
     response = {}
@@ -51,7 +55,7 @@ def deviceInfo(phone):
                 "payload": {
                     "template_type": "button",
                     "text": response['displayText'],
-                    "buttons":[
+                    "buttons": [
                         {
                             "type": "web_url",
                             "url": topResult['link'],
@@ -64,22 +68,11 @@ def deviceInfo(phone):
         "kik": {                        
             "type": "link", 
             "url": topResult['link'],
-            "text": response['displayText']
-#             "keyboards": [
-#                 {
-#                     "type": "suggested",
-#                     "responses": [
-#                         {
-#                             "type": "text",
-#                             "body": "View Full Device Specs"
-#                         }                        
-#                     ]
-#                 }
-#             ]
+            "text": response['displayText']             
         },
-        "telegram": {
-            
-        }
+#         "telegram": {
+                            
+#         }
     }
     
     response['contextOut'] = []
@@ -89,28 +82,49 @@ def deviceInfo(phone):
 
 def paramExtractor(resolvedQuery):     
     
+    # convert things like 32GB to 32 GB
+    resolvedQuery = re.sub(r"(\d+)\s*", r"\1 ", resolvedQuery)
+    
     # NLTK POS tagging 
     posSentence = nltk.pos_tag(nltk.word_tokenize(resolvedQuery))
+    print(posSentence)
 
     # NP-chunking using a tag pattern - refer to NLTK book chapter 7 for more details
-    grammar = """NP: {<DT>?<RB.*>*<JJ.*>*<CD>?<NN.*>+}
-        PP: {<IN><NP>}
-        NP: {<NP><PP>}
-        """
+    grammar = """        
+        NP: {<DT>?<RB.*>*<CD>?<JJ.*>*<CD>?<NN.*>+}
+        NP_P: {<NP>(<IN><NP>)+}
+        
+        SHOULD: {<MD><VB>}
+        NP_S: {(<NP>|<PRP>)<SHOULD><IN><NP>}
+        NP_J: {(<NP>|<PRP>)?<SHOULD><RB.*>*<CD>?<JJ.*>+<CD>?}
+    """
+    
+#     NP_S captures phrases like, "the camera should be around 13 mp"
+#     NP_J captures phrases like, "it should be pretty cheap"
+
+#     NP: {<DT>?<RB.*>*<CD>?<JJ.*>*<CD>?<NN.*>+(<IN>?<CD>?<NN.*>*)+}
+#     original rules:
+#     NP: {(<DT>?<RB.*>*<JJ.*>*<CD>?<NN.*>+)}
+#     PP: {<IN><NP>}
+#     NP: {<NP><PP>}
+    
     rp = nltk.RegexpParser(grammar)
-    result = rp.parse(posSentence)
-
-#     pprint(dir(result))
-
+    result = rp.parse(posSentence)    
+    result.pprint()
+    
     # extract noun phrases from tree
-    returnText = "Important phrases\n"
+    NPTypes = ["NP", "NP_S", "NP_J", "NP_P"]
+    returnText = ""
     nounPhrases = []
     for subtree in result.subtrees():
-        if subtree.label() == "NP": 
-            returnText += (str(subtree) + "\n")            
+        if subtree.label() in NPTypes: 
+            returnText += (str(subtree) + "\n\n")            
             nounPhrases.append(subtree)
-
-    print(nounPhrases)
+    
+#     for nounPhrase in reversed(nounPhrases):
+#         print(nounPhrase.leaves())
+        
+#     print(nounPhrases)
     
     response = {"speech": returnText, "displayText": returnText, "data": {}, "contextOut": [], "source": "GSMArena"}
     return response    
@@ -118,18 +132,17 @@ def paramExtractor(resolvedQuery):
 @app.route('/webhook', methods=['POST'])
 def handler():   
     reqBody = request.get_json()
+    resolvedQuery = reqBody['result']['resolvedQuery']
     
     apiAiResponse = {}
     
     intentName = reqBody['result']['metadata']['intentName']
     if intentName == "deviceInfo":
         # get phone name
-        phone = reqBody['result']['parameters']['phone']
-        apiAiResponse = deviceInfo(phone)
+        phone = reqBody['result']['parameters']['phone']        
+        apiAiResponse = deviceInfo(phone, resolvedQuery)
     
-    else:        
-        # get user query
-        resolvedQuery = reqBody['result']['resolvedQuery']
+    else:                        
         apiAiResponse = paramExtractor(resolvedQuery)
                    
 
