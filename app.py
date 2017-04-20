@@ -4,7 +4,6 @@ from flask import Flask
 from flask import request
 
 # nlp libs
-# from stat_parser import Parser
 import nltk
 import re
 
@@ -13,85 +12,91 @@ from pprint import pprint
 from bs4 import BeautifulSoup
 import json
 
+# my modules
+import responses
+import gadata
 
 app = Flask(__name__)
 
+GA_BASEURL = 'http://www.gsmarena.com/'
+GA_SEARCHURL = 'http://www.gsmarena.com/results.php3'
+GA_SEARCHURL_PARAM1 = 'sQuickSearch'
+GA_SEARCHURL_PARAM2 = 'sName'
+HTML_PARSER = 'html.parser'
+
+# function to fetch device information from GSMArena.com
 def deviceInfo(phone, resolvedQuery):
-    # I may need to replace spaces in the search string with + signs
+#     I may need to replace spaces in the search string with + signs
     
-    payload = {'sQuickSearch': 'yes', 'sName': phone}
-    res = requests.get('http://www.gsmarena.com/results.php3', params = payload)
-#     print(res.url)
+    # perform a search for the phone and obtain search result page
+    params = {
+        GA_SEARCHURL_PARAM1: 'yes', 
+        GA_SEARCHURL_PARAM2: phone
+    }
+    res = requests.get(GA_SEARCHURL, params)
     html_doc = res.text
     
-    soup = BeautifulSoup(html_doc, 'html.parser')
-    if soup.find(class_="makers"): rawSearchResults = soup.find(class_="makers").ul.find_all("li")
-    else: return {"speech": "No results found.", "displayText": "No results found.", "data": {}, "source": "GSMArena"}
+    # parse the results page and look for phones
+    soup = BeautifulSoup(html_doc, HTML_PARSER)
+    if soup.find(class_="makers"): 
+        rawSearchResults = soup.find(class_="makers").ul.find_all("li")
+    else:         
+        return responses.ApiAiResponse().dict
     
-    # issue: some searches go directly to the device info page, invalidating the above html parsing: eg. nexus 6p
+#     issue: some searches go directly to the device info page, invalidating the above html parsing: eg. nexus 6p
     
     searchResults = []    
     for rawSearchResult in rawSearchResults[:3]:
         searchResult = {}
-        searchResult['link'] = "http://www.gsmarena.com/" + rawSearchResult.a.get('href')
+        searchResult['link'] = GA_BASEURL + rawSearchResult.a.get('href')
         searchResult['image'] = rawSearchResult.img.get('src')
         searchResult['description'] = rawSearchResult.img.get('title')
         searchResult['name'] = re.sub(r'\<\/?br\>', ' ', ''.join(str(element) for element in rawSearchResult.a.span.contents)).strip()
         
-        searchResults.append(searchResult)       
+        searchResults.append(searchResult)
     
-    if searchResults: topResult = searchResults[0]
-#     else: return {"speech": "No results found.", "displayText": "No results found.", "data": {}, "source": "GSMArena"}
-    else: return paramExtractor(resolvedQuery)
+    if searchResults: 
+        topResult = searchResults[0]
+    else: 
+        return paramExtractor(resolvedQuery)
     
-    # build api.ai response
-    response = {}
-    response['speech'] = topResult['name'] + "\n\n" + topResult['description']
-    response['displayText'] = topResult['name'] + "\n\n" + topResult['description']
-    response['data'] = {
-        "facebook": {            
-            "attachment": {
-                "type": "template",
-                "payload": {
-                    "template_type": "button",
-                    "text": response['displayText'],
-                    "buttons": [
-                        {
-                            "type": "web_url",
-                            "url": topResult['link'],
-                            "title": "View Device Specs"
-                        }
-                    ]
-                }
-            }
-        },
-        "kik": {                        
-            "type": "link", 
-            "url": topResult['link'],
-            "text": response['displayText']             
-        },
-#         "telegram": {
-                            
-#         }
-    }
-    
-    response['contextOut'] = []
-    response['source'] = "GSMArena"
+    # build api.ai response    
+    speech = topResult['name'] + "\n\n" + topResult['description']
+    displayText = topResult['name'] + "\n\n" + topResult['description']
+    link = topResult['link']
         
-    return response
+    response = responses.ApiAiResponse()
+    response.format(speech, displayText, link)
+               
+    return response.dict
 
 def paramExtractor(resolvedQuery):     
     
-    # convert things like 32GB to 32 GB
-    resolvedQuery = re.sub(r"(\d+)\s*", r"\1 ", resolvedQuery)
+    ### query preprocessing and clever hacks
+    ########################################
     
-    # NLTK POS tagging 
+    # convert \" to inch - 5" becomes 5inch
+    resolvedQuery = re.sub(r"\"", r"inch", resolvedQuery)
+    
+    # convert things like 32GB to 32 GB - so that 32 is considered as CD and GB as NN/NNP
+    resolvedQuery = re.sub(r"(\d+(.\d+)?)\s*", r"\1 ", resolvedQuery)
+    
+    # convert i to I so that we reduce the number of noun phrases captured
+    resolvedQuery = re.sub(r"\bi\b", r"I", resolvedQuery)
+    
+    ### query processing
+    ####################
+    
+    # NLTK POS tagging
     posSentence = nltk.pos_tag(nltk.word_tokenize(resolvedQuery))
-    print(posSentence)
+#     print(posSentence)
 
     # NP-chunking using a tag pattern - refer to NLTK book chapter 7 for more details
+    # NP_S captures phrases like, "the camera should be around 13 mp"
+    # NP_J captures phrases like, "it should be cheap"
     grammar = """        
         NP: {<DT>?<RB.*>*<CD>?<JJ.*>*<CD>?<NN.*>+}
+        NP_C: {<NP><NP>}
         NP_P: {<NP>(<IN><NP>)+}
         
         SHOULD: {<MD><VB>}
@@ -99,35 +104,46 @@ def paramExtractor(resolvedQuery):
         NP_J: {(<NP>|<PRP>)?<SHOULD><RB.*>*<CD>?<JJ.*>+<CD>?}
     """
     
-#     NP_S captures phrases like, "the camera should be around 13 mp"
-#     NP_J captures phrases like, "it should be pretty cheap"
-
-#     NP: {<DT>?<RB.*>*<CD>?<JJ.*>*<CD>?<NN.*>+(<IN>?<CD>?<NN.*>*)+}
-#     original rules:
-#     NP: {(<DT>?<RB.*>*<JJ.*>*<CD>?<NN.*>+)}
-#     PP: {<IN><NP>}
-#     NP: {<NP><PP>}
-    
     rp = nltk.RegexpParser(grammar)
-    result = rp.parse(posSentence)    
-    result.pprint()
+    result = rp.parse(posSentence)
+#     result.pprint()    
     
     # extract noun phrases from tree
-    NPTypes = ["NP", "NP_S", "NP_J", "NP_P"]
+    NPTypes = ["NP", "NP_S", "NP_J", "NP_P", "NP_C"]
     returnText = ""
     nounPhrases = []
     for subtree in result.subtrees():
-        if subtree.label() in NPTypes: 
-            returnText += (str(subtree) + "\n\n")            
-            nounPhrases.append(subtree)
+        if subtree.label() in NPTypes:
+            returnText += (str(subtree) + "\n\n")
+            nounPhrases.append(subtree)        
     
-#     for nounPhrase in reversed(nounPhrases):
-#         print(nounPhrase.leaves())
+    params = gadata.parameters
+    for nounPhrase in nounPhrases:
+        np = nounPhrase.leaves()
+        sentence = [tup[0].lower() for tup in np]
+        bigrams = [' '.join(tuple) for tuple in list(nltk.bigrams(sentence))]
+        tags = [tup[1] for tup in np]
         
-#     print(nounPhrases)
+        for param in params:
+            if param['category'] == 'value':
+                for id in param['identifiers']:
+                    if id in sentence or id in bigrams:
+                        if param['type'] == 'csv':
+                            print param['reference'] + ' = ' + str(param['values'][id])
+                        elif param['type'] == 'radio':
+                            print param['reference'] + ' = ' + str(param['values']['yes'])
+                        elif param['type'] == 'check':
+                            print param['reference']            
+                        
+            
+        print sentence
+        print tags
+        print
     
-    response = {"speech": returnText, "displayText": returnText, "data": {}, "contextOut": [], "source": "GSMArena"}
-    return response    
+    response = responses.ApiAiResponse()
+    response.setSpeech(returnText)
+    response.setDisplayText(returnText)
+    return response.dict
 
 @app.route('/webhook', methods=['POST'])
 def handler():   
@@ -145,6 +161,5 @@ def handler():
     else:                        
         apiAiResponse = paramExtractor(resolvedQuery)
                    
-
     # a response HAS to be sent
     return json.dumps(apiAiResponse)
