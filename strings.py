@@ -1,0 +1,5 @@
+GA_BASEURL = 'http://www.gsmarena.com/'
+GA_SEARCHURL = 'http://www.gsmarena.com/results.php3'
+GA_SEARCHURL_PARAM1 = 'sQuickSearch'
+GA_SEARCHURL_PARAM2 = 'sName'
+HTML_PARSER = 'html.parser'

@@ -1,0 +1,155 @@
+{
+    reference: 'nYearMin',
+    synonyms: ['year', 'released after', 'launched after'],
+    identifiers: [],
+    pattern: '/\d{4}/',
+    type: 'integer'
+}
+{
+    reference: 'nYearMax',
+    synonyms: ['year', 'released before', 'launched before'],
+    identifiers: [],
+    pattern: '/\d{4}/',
+    type: 'integer'
+}
+{
+    reference: 'sAvailabilities',
+    synonyms: [],
+    identifiers: [],
+    type: 'csv',
+    values: ''
+}
+{
+    // price in euros
+    reference: 'nPriceMin',
+    synonyms: ['price', 'cost', 'amount'],
+    bigramKeys: ['price', 'cost'],
+    identifiers: [],
+    pattern: '/\d+/',
+    type: 'integer'
+}
+{
+    // price in euros
+    reference: 'nPriceMax',
+    synonyms: ['price', 'cost', 'amount'],
+    identifiers: [],
+    pattern: '/\d+/',
+    type: 'integer'
+}
+{
+    // weight in grams
+    reference: 'nWeightMin',
+    reference_identifiers: [],
+    identifiers: [],
+    type: 'integer'
+}
+{
+    // weight in grams
+    reference: 'nWeightMax',
+    reference_identifiers: [],
+    identifiers: [],
+    type: 'integer'
+}
+{
+    reference: 'nCpuMHzMax',
+    reference_identifiers: ['speed', 'clock speed', 'processor speed', 'cpu speed'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nCPUCoresMax',
+    reference_identifiers: ['core', 'cores'],
+    identifiers: ['single core', 'dual core', 'quad core', 'octa core'],
+    type: 'integer',
+    pattern: '/\d/'
+}
+{
+    // ram measured in megabytes
+    reference: 'nRamMax',
+    reference_identifiers: ['ram', 'memory', 'main memory'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    // internal memory in megabytes
+    reference: 'nIntMemMax',
+    reference_identifiers: ['memory', 'internal memory', 'storage', 'storage space', 'storage size', 'capacity'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nDisplayResMax',
+    reference_identifiers: ['resolution'],
+    identifiers: [],
+    type: 'integer'
+}
+{
+    reference: 'fDisplayInchesMax',
+    reference_identifiers: ['screen', 'screen size'],
+    identifiers: [],
+    type: 'float',
+    pattern: '/\d\.\d/'
+}
+{
+    reference: 'nDisplayDensityMax',
+    reference_identifiers: ['pixel density', 'display density', 'screen density'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nCamPrimMax',
+    reference_identifiers: ['camera', 'primary camera', 'back camera', 'rear camera', 'main camera'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nCamSecMax',
+    reference_identifiers: ['camera', 'secondary camera', 'front camera', 'selfie camera'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nBatCapacityMax',
+    reference_identifiers: ['battery', 'battery life', 'battery capacity'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nBatStandbyMax',
+    reference_identifiers: ['battery standby', 'phone standby', 'standby', 'standby time'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nBatTalkMax',
+    reference_identifiers: ['talktime'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nBatStandbyMin',
+    reference_identifiers: ['battery standby', 'phone standby', 'standby', 'standby time'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+{
+    reference: 'nBatTalkMin',
+    reference_identifiers: ['talktime'],
+    identifiers: [],
+    type: 'integer',
+    pattern: '/\d+/'
+}
+// 2G - s2Gs
+// 3G - s3Gs
+// 3.5G - s3G5s
+// 4G - s4Gs

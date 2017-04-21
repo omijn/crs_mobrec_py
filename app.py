@@ -8,21 +8,17 @@ import nltk
 import re
 
 # others
-from pprint import pprint
+import pprint
 from bs4 import BeautifulSoup
 import json
 
 # my modules
+from strings import *
+import queryprocessor
 import responses
 import gadata
 
 app = Flask(__name__)
-
-GA_BASEURL = 'http://www.gsmarena.com/'
-GA_SEARCHURL = 'http://www.gsmarena.com/results.php3'
-GA_SEARCHURL_PARAM1 = 'sQuickSearch'
-GA_SEARCHURL_PARAM2 = 'sName'
-HTML_PARSER = 'html.parser'
 
 # function to fetch device information from GSMArena.com
 def deviceInfo(phone, resolvedQuery):
@@ -70,107 +66,19 @@ def deviceInfo(phone, resolvedQuery):
                
     return response.dict
 
-def paramExtractor(resolvedQuery):
+def paramExtractor(resolved_query):
     
-    ### query preprocessing and clever hacks
-    ########################################
+    qp = queryprocessor.QueryProcessor()
     
-    # convert \" to inch - 5" becomes 5inch
-    resolvedQuery = re.sub(r"\"", r"inch", resolvedQuery)
-    
-    # convert things like 32GB to 32 GB - so that 32 is considered as CD and GB as NN/NNP
-    resolvedQuery = re.sub(r"(\d+(.\d+)?)\s*", r"\1 ", resolvedQuery)
-    
-    # convert i to I so that we reduce the number of noun phrases captured
-    resolvedQuery = re.sub(r"\bi\b", r"I", resolvedQuery)
-    
-    # convert GB to MB
-    
-    ### query processing
-    ####################
-    
-    # NLTK POS tagging
-    posSentence = nltk.pos_tag(nltk.word_tokenize(resolvedQuery))
-#     print(posSentence)
+    resolved_query = qp.preprocess(resolved_query)
+    return_text, noun_phrases = qp.extract_NPs(resolved_query)
+    parameters = qp.extract_parameters(noun_phrases)
 
-    # NP-chunking using a tag pattern - refer to NLTK book chapter 7 for more details
-    # NP_S captures phrases like, "the camera should be around 13 mp"
-    # NP_J captures phrases like, "it should be cheap"
-    grammar = """        
-        NP: {<DT>?<RB.*>*<CD>?<JJ.*>*<CD>?<NN.*>+}
-        NP_C: {<NP><NP>}
-        NP_P: {<NP>(<IN><NP>)+}
-        
-        SHOULD: {<MD><VB>}
-        NP_S: {(<NP>|<PRP>)<SHOULD><IN><NP>}
-        NP_J: {(<NP>|<PRP>)?<SHOULD><RB.*>*<CD>?<JJ.*>+<CD>?}
-    """
-    
-    rp = nltk.RegexpParser(grammar)
-    result = rp.parse(posSentence)
-#     result.pprint()    
-    
-    # extract noun phrases from tree
-    NPTypes = ["NP", "NP_S", "NP_J", "NP_P", "NP_C"]
-    returnText = ""
-    nounPhrases = []
-    for subtree in result.subtrees():
-        if subtree.label() in NPTypes:
-            returnText += (str(subtree) + "\n\n")
-            nounPhrases.append(subtree)        
-    
-    params = gadata.parameters
-    for nounPhrase in nounPhrases:
-        np = nounPhrase.leaves()
-        tokens = [tup[0].lower() for tup in np]
-        phrase = ' '.join(tokens)
-        bigrams = [' '.join(tuple) for tuple in list(nltk.bigrams(tokens))]
-        tags = [tup[1] for tup in np]
-        
-        for param in params:
-            if param['category'] == 'value':
-                for id in param['identifiers']:
-                    if id in tokens or id in bigrams:
-                        if param['type'] == 'csv':
-                            print param['reference'] + ' = ' + str(param['values'][id])
-                        elif param['type'] == 'radio':
-                            print param['reference'] + ' = ' + str(param['values']['yes'])
-                        elif param['type'] == 'check':
-                            print param['reference']            
-                        
-            elif param['category'] == 'general':
-                for id in param['reference_identifiers']:
-                    if id in tokens or id in bigrams:
-                        if 'pattern' in param:
-                            regex = param['pattern']
-                            match = re.search(regex, phrase)
-                            if match:
-                                print param['reference'] + ' = ' + match.group(0)
-                                break                                                                           
-                            
-                        if 'pos' in param:
-                            # if pos in tags
-                            for pos in param['pos']:
-                                if pos in tags:
-                                    lingvar = tokens[tags.index(pos)]
-                                    print param['reference'] + ' = ' + lingvar
-#                             break
-                        
-                        if 'values' in param:
-                            if param['type'] == 'radio':
-                                print param['reference'] + ' = ' + str(param['values']['yes'])
-                            else:
-                                for val in param['values']:
-                                    if val in tokens:
-                                        print param['reference'] + ' = ' + str(param['values'][val])
-                                        break
-        print tokens
-        print tags
-        print
+    parameters = pprint.pformat(parameters, 4)
     
     response = responses.ApiAiResponse()
-    response.setSpeech(returnText)
-    response.setDisplayText(returnText)
+    response.setSpeech(parameters)
+    response.setDisplayText(parameters)
     return response.dict
 
 @app.route('/webhook', methods=['POST'])
