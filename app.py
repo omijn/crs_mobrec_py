@@ -70,7 +70,7 @@ def deviceInfo(phone, resolvedQuery):
                
     return response.dict
 
-def paramExtractor(resolvedQuery):     
+def paramExtractor(resolvedQuery):
     
     ### query preprocessing and clever hacks
     ########################################
@@ -83,6 +83,8 @@ def paramExtractor(resolvedQuery):
     
     # convert i to I so that we reduce the number of noun phrases captured
     resolvedQuery = re.sub(r"\bi\b", r"I", resolvedQuery)
+    
+    # convert GB to MB
     
     ### query processing
     ####################
@@ -120,14 +122,15 @@ def paramExtractor(resolvedQuery):
     params = gadata.parameters
     for nounPhrase in nounPhrases:
         np = nounPhrase.leaves()
-        sentence = [tup[0].lower() for tup in np]
-        bigrams = [' '.join(tuple) for tuple in list(nltk.bigrams(sentence))]
+        tokens = [tup[0].lower() for tup in np]
+        phrase = ' '.join(tokens)
+        bigrams = [' '.join(tuple) for tuple in list(nltk.bigrams(tokens))]
         tags = [tup[1] for tup in np]
         
         for param in params:
             if param['category'] == 'value':
                 for id in param['identifiers']:
-                    if id in sentence or id in bigrams:
+                    if id in tokens or id in bigrams:
                         if param['type'] == 'csv':
                             print param['reference'] + ' = ' + str(param['values'][id])
                         elif param['type'] == 'radio':
@@ -135,8 +138,33 @@ def paramExtractor(resolvedQuery):
                         elif param['type'] == 'check':
                             print param['reference']            
                         
-            
-        print sentence
+            elif param['category'] == 'general':
+                for id in param['reference_identifiers']:
+                    if id in tokens or id in bigrams:
+                        if 'pattern' in param:
+                            regex = param['pattern']
+                            match = re.search(regex, phrase)
+                            if match:
+                                print param['reference'] + ' = ' + match.group(0)
+                                break                                                                           
+                            
+                        if 'pos' in param:
+                            # if pos in tags
+                            for pos in param['pos']:
+                                if pos in tags:
+                                    lingvar = tokens[tags.index(pos)]
+                                    print param['reference'] + ' = ' + lingvar
+#                             break
+                        
+                        if 'values' in param:
+                            if param['type'] == 'radio':
+                                print param['reference'] + ' = ' + str(param['values']['yes'])
+                            else:
+                                for val in param['values']:
+                                    if val in tokens:
+                                        print param['reference'] + ' = ' + str(param['values'][val])
+                                        break
+        print tokens
         print tags
         print
     

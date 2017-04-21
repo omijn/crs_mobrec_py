@@ -39,10 +39,10 @@ parameters = [{
 {
     'reference': 'nCpuMHzMin',
     'category': 'general',
-    'reference_identifiers': ['phone', 'processor', 'cpu'],    
+    'reference_identifiers': ['processor', 'cpu'],    
     'pos': ['JJ', 'RB'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'nCPUCoresMin',
@@ -62,7 +62,7 @@ parameters = [{
     'reference_identifiers': ['ram', 'memory', 'main memory'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {    
     'reference': 'nIntMemMin',
@@ -70,7 +70,7 @@ parameters = [{
     'reference_identifiers': ['memory', 'internal memory', 'storage', 'storage space', 'storage size', 'capacity'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'idCardslot',
@@ -87,7 +87,7 @@ parameters = [{
     'reference_identifiers': ['resolution'],    
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'fDisplayInchesMin',
@@ -95,7 +95,7 @@ parameters = [{
     'reference_identifiers': ['screen', 'screen size', 'inch'],
     'pos': ['JJ'],
     'type': 'float',
-    'pattern': '\d\.\d'
+    'pattern': r'\d(\.\d)?'
 },
 {
     'reference': 'nDisplayDensityMin',
@@ -103,7 +103,7 @@ parameters = [{
     'reference_identifiers': ['pixel density', 'display density', 'screen density', 'ppi'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'sDisplayTechs',
@@ -130,15 +130,15 @@ parameters = [{
     'reference_identifiers': ['camera', 'primary camera', 'back camera', 'rear camera', 'main camera'],    
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'nCamSecMin',
     'category': 'general',
-    'reference_identifiers': ['camera', 'secondary camera', 'front camera', 'selfie camera'],
+    'reference_identifiers': ['secondary camera', 'front camera', 'selfie camera'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'chkFrontflash',
@@ -240,9 +240,9 @@ parameters = [{
     'reference': 'nBatCapacityMin',
     'category': 'general',
     'reference_identifiers': ['battery', 'battery capacity', 'battery life'],
-    'pos': ['JJ'],
+    'pos': ['RB', 'JJ'],
     'type': 'integer',
-    'pattern': '\d+'
+    'pattern': r'\d+'
 },
 {
     'reference': 'idBatRemovable',
