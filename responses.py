@@ -1,31 +1,25 @@
-class ApiAiResponse:
-    speech = 'speech'
-    displayText = 'displayText'
-    data = 'data'
-    source = 'source'
+class ApiAiResponse:    
         
-    def __init__(self):              
-        self.dict = {
-            ApiAiResponse.speech: 'No results found.',
-            ApiAiResponse.displayText: 'No results found.',
-            ApiAiResponse.data: {},
-            ApiAiResponse.source: 'GSMArena'
-        }
+    def __init__(self):                      
+        self.speech = 'No results found.',
+        self.displayText = 'No results found.',
+        self.data = {},
+        self.source = 'GSMArena'
     
-    def format(self, speech, displayText, link):
-        self.setSpeech(speech)
-        self.setDisplayText(displayText)
-        self.setData(displayText, link)
+    def format_device_info(self, speech, displayText, link):
+        self.set_speech(speech)
+        self.set_display_text(displayText)
+        self.set_data_device_info(displayText, link)
     
-    def setSpeech(self, speech):
-        self.dict[ApiAiResponse.speech] = speech                         
+    def set_speech(self, speech):
+        self.speech = speech                         
 
-    def setDisplayText(self, displayText):
-        self.dict[ApiAiResponse.displayText] = displayText    
+    def set_display_text(self, displayText):
+        self.displayText = displayText    
     
-    def setData(self, displayText, link):
-        self.dict[ApiAiResponse.data] = {        
-            "facebook": {            
+    def set_data_device_info(self, displayText, link):
+        self.data = {
+            "facebook": {
                 "attachment": {
                     "type": "template",
                     "payload": {
@@ -41,12 +35,12 @@ class ApiAiResponse:
                     }
                 }
             },
-            "kik": {                        
-                "type": "link", 
+            "kik": {
+                "type": "link",
                 "url": link,
                 "text": displayText
             },
     #         "telegram": {
 
     #         }
-        }            
+        }

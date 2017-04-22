@@ -1,6 +1,7 @@
 import re
 import nltk
 import gadata
+import scraper
 
 class QueryProcessor:
     
@@ -28,7 +29,7 @@ class QueryProcessor:
         -> Convert GB values to MB. 
                 Example: 4 GB becomes 4096 MB. 
         """
-        
+        # capitalize named entities
         query = re.sub(r"\"", r"inch", query)
         query = re.sub(r"(\d+(.\d+)?)\s*", r"\1 ", query)
         query = re.sub(r"\bi\b", r"I", query)
@@ -61,11 +62,10 @@ class QueryProcessor:
         noun_phrases = []
         
         for subtree in parse_tree.subtrees():
-            if subtree.label() in NPs_of_interest:
-                return_text += (str(subtree) + "\n\n")
+            if subtree.label() in NPs_of_interest:                
                 noun_phrases.append(subtree)
         
-        return return_text, noun_phrases
+        return noun_phrases
     
     def extract_NPs(self, query):
         """From the cleaned up user query, extract useful noun phrases defined by grammar.
@@ -78,9 +78,9 @@ class QueryProcessor:
         
         tagged_query = self.postag_query(query)                        
         parse_tree = self.parse_query(tagged_query, np_grammar)
-        return_text, noun_phrases = self.pull_NPs(parse_tree)
+        noun_phrases = self.pull_NPs(parse_tree)
         
-        return return_text, noun_phrases
+        return noun_phrases
     
     def extract_parameters(self, noun_phrases):
         """Look for relevant parameters in the captured noun phrases.
@@ -168,4 +168,10 @@ class QueryProcessor:
             print tags
             print
             
+        return parameters
+    
+    def process(self, query):
+        """preprocess query -> extract noun phrases -> extract parameters -> return"""
+        
+        parameters = self.extract_parameters(self.extract_NPs(self.preprocess(query)))
         return parameters
