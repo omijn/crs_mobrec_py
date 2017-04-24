@@ -20,24 +20,26 @@ qp = queryprocessor.QueryProcessor()
 
 @app.route('/webhook', methods=['POST'])
 def handler():   
-    req_body = request.get_json()
-    resolved_query = req_body['result']['resolvedQuery']
+    req_body = request.get_json()    
+    query = req_body['result']['resolvedQuery']
     phone = req_body['result']['parameters']['phone'] if 'phone' in req_body['result']['parameters'] else ''
-    intent_name = req_body['result']['metadata']['intentName']
+    intent = req_body['result']['metadata']['intentName']
     
-    api_ai_response = {}
+    api_ai_response = {}        
+    
+    if intent == strings.DEVICEINFO_INTENT:
+        api_ai_response = sc.ga_quicksearch(phone)
+    
+    elif intent == strings.SEARCHPHONE_INTENT or intent == strings.FALLBACK_INTENT:
+#         parameters = qp.process(query)
+#         parameters = pprint.pformat(parameters, 4)
+
+#         response = responses.ApiAiResponse()
+#         response.set_speech(parameters)
+#         response.set_display_text(parameters)
+
+#         api_ai_response = vars(response)
         
-    if intent_name == strings.DEVICEINFO_INTENT:
-        api_ai_response = sc.quicksearch(phone, resolved_query)
-    
-    elif intent_name == strings.SEARCHPHONE_INTENT:
-        parameters = qp.process(resolved_query)
-        parameters = pprint.pformat(parameters, 4)
-
-        response = responses.ApiAiResponse()
-        response.set_speech(parameters)
-        response.set_display_text(parameters)
-
-        api_ai_response = vars(response)
+        api_ai_response = qp.process(query)
                        
     return json.dumps(api_ai_response)

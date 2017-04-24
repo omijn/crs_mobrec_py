@@ -14,36 +14,43 @@ class QueryProcessor:
             NP_J: {(<NP>|<PRP>)?<SHOULD><RB.*>*<CD>?<JJ.*>+<CD>?}
         """
     
-    def spellcheck(self, query):
+    def __spellcheck(self, query):
         """Correct obvious spelling mistakes."""
         
         return query
     
-    def preprocess(self, query):
+    def __preprocess(self, query):
         """Query preprocessing and clever hacks.
-        
+                
         -> Convert '"' (double quote) to 'inch'. 
                 Example: '5"' becomes '5inch'.                
         -> Convert values like 32GB to 32 GB so that 32 is tagged as CD and GB as NN/NNP.
-        -> Convert the word 'i' to 'I' so that we reduce the number of noun phrases captured.
+        -> Convert the word 'i' to 'I' so that we reduce the number of (unnecessary) noun phrases captured.
         -> Convert GB values to MB. 
-                Example: 4 GB becomes 4096 MB. 
+                Example: 4 GB becomes 4096 MB.        
         """
-        # capitalize named entities
+        
+#         named_entities = gadata.named_entities
+#         for ne in named_entities: 
+#             query = re.sub(r"\b" + ne + r"\b", ne.title(), query)
         query = re.sub(r"\"", r"inch", query)
         query = re.sub(r"(\d+(.\d+)?)\s*", r"\1 ", query)
         query = re.sub(r"\bi\b", r"I", query)
-#         query = self.spellcheck(query)
+        query = re.sub(r"(\d+)\s*(gb|gig\w*)", 
+                       lambda match: '{} MB'.format(int(match.group(1)) * 1024), 
+                       query, flags=re.IGNORECASE)
+
+#         query = self.__spellcheck(query)        
         
         return query            
     
-    def postag_query(self, query):
+    def __postag_query(self, query):
         """Use default nltk part-of-speech tagger to tag user query."""
         
         tagged_query = nltk.pos_tag(nltk.word_tokenize(query))
         return tagged_query
     
-    def parse_query(self, tagged_query, np_grammar):
+    def __parse_query(self, tagged_query, np_grammar):
         """Generate parse tree of the (tagged) user query using custom noun phrase grammar.
         
         This is called NP-chunking.
@@ -54,7 +61,7 @@ class QueryProcessor:
         parse_tree = rgx_parser.parse(tagged_query)
         return parse_tree
     
-    def pull_NPs(self, parse_tree):
+    def __pull_NPs(self, parse_tree):
         """From the parse tree, pull out all the NP chunks of interest."""
         
         NPs_of_interest = ["NP", "NP_S", "NP_J", "NP_P", "NP_C"]
@@ -67,7 +74,7 @@ class QueryProcessor:
         
         return noun_phrases
     
-    def extract_NPs(self, query):
+    def __extract_NPs(self, query):
         """From the cleaned up user query, extract useful noun phrases defined by grammar.
         
         NP_S captures phrases like, "the camera should be 13 mp"
@@ -76,13 +83,13 @@ class QueryProcessor:
         
         np_grammar = QueryProcessor.np_grammar
         
-        tagged_query = self.postag_query(query)                        
-        parse_tree = self.parse_query(tagged_query, np_grammar)
-        noun_phrases = self.pull_NPs(parse_tree)
+        tagged_query = self.__postag_query(query)                        
+        parse_tree = self.__parse_query(tagged_query, np_grammar)
+        noun_phrases = self.__pull_NPs(parse_tree)
         
         return noun_phrases
     
-    def extract_parameters(self, noun_phrases):
+    def __extract_parameters(self, noun_phrases):
         """Look for relevant parameters in the captured noun phrases.
         
         tokens - list of words in a noun phrases
@@ -170,8 +177,25 @@ class QueryProcessor:
             
         return parameters
     
-    def process(self, query):
-        """preprocess query -> extract noun phrases -> extract parameters -> return"""
+    def __resolve_params(self, parameters):
+        """Resolve linguistic variables in parameters to explicit values."""
         
-        parameters = self.extract_parameters(self.extract_NPs(self.preprocess(query)))
         return parameters
+        
+    def __phone_search(self, parameters):
+        """Call GSMArena scraper."""
+        
+        sc = scraper.Scraper()
+        phones = sc.ga_phone_finder(parameters)
+        return phones
+      
+    def process(self, query):
+        """Main class method."""
+        
+        query = self.__preprocess(query)
+        noun_phrases = self.__extract_NPs(query)
+        parameters = self.__extract_parameters(noun_phrases)
+        print(parameters)
+        parameters = self.__resolve_params(parameters)
+        phones = self.__phone_search(parameters)
+        return phones
