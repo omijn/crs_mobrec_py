@@ -9,6 +9,9 @@ GA_PHONEFINDER_URL = 'http://www.gsmarena.com/results.php3'
 HTML_PARSER = 'html.parser'
 
 # api.ai
-DEVICEINFO_INTENT = 'deviceInfo'
-SEARCHPHONE_INTENT = 'iWant'
+DEVICEINFO_INTENT = 'Request Device Specs'
+SEARCHPHONE_INTENT = 'Constrain'
+SEARCHPHONE_FOLLOWUP_NEXT_INTENT = 'Constrain - next'
+SEARCHPHONE_FOLLOWUP_MORE_INTENT = 'Constrain - more'
+SEARCHPHONE_FOLLOWUP_PREV_INTENT = 'Constrain - prev'
 FALLBACK_INTENT = 'Default Fallback Intent'

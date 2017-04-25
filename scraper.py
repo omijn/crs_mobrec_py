@@ -28,33 +28,25 @@ class Scraper:
         
         soup = bs4.BeautifulSoup(html_doc, Scraper.html_parser_type)
         if soup.find(class_="makers"): 
-            rawSearchResults = soup.find(class_="makers").ul.find_all("li")            
+            raw_html_results = soup.find(class_="makers").ul.find_all("li")            
         else:         
             return vars(responses.ApiAiResponse())
         
         #     issue: some searches go directly to the device info page, invalidating the above html parsing: eg. nexus 6p
         
-        searchResults = []
-        for rawSearchResult in rawSearchResults[:3]:
-            searchResult = {}
-            searchResult['link'] = Scraper.ga_base_url + rawSearchResult.a.get('href')
-            searchResult['image'] = rawSearchResult.img.get('src')
-            searchResult['description'] = rawSearchResult.img.get('title')
-            searchResult['name'] = re.sub(r'\<\/?br\>', ' ', ''.join(str(element) for element in rawSearchResult.a.span.contents)).strip()
-
-            searchResults.append(searchResult)
-
-        if searchResults:
-            topResult = searchResults[0]
-        
-        # build api.ai response
-        speech = topResult['name'] + "\n\n" + topResult['description']
-        displayText = topResult['name'] + "\n\n" + topResult['description']
-        link = topResult['link']
+        phones = []
+        for result in raw_html_results[:3]:
+            phone = {}
+            phone['link'] = Scraper.ga_base_url + result.a.get('href')
+            phone['image'] = result.img.get('src')
+            phone['description'] = result.img.get('title')
+            phone['name'] = re.sub(r'\<\/?br\>', ' ', ''.join(str(element) for element in result.a.span.contents)).strip()
+            phones.append(phone)
         
         response = responses.ApiAiResponse()
-        response.format_device_info(speech, displayText, link)
-        return vars(response)
+        response.set(phones)                        
+                        
+        return response.get()
     
     def ga_quicksearch(self, phone):
         """Fetch device information from GSMArena.com using the regular search bar search."""
@@ -67,6 +59,8 @@ class Scraper:
     def ga_phone_finder(self, parameters):
         """Use the parameters extracted from the user query to perform a search using GSMArena.com's phone finder feature."""
         
-        html_doc = self.__fetch_page(Scraper.ga_pf_url, parameters)
+        http_get_params = parameters
+        html_doc = self.__fetch_page(Scraper.ga_pf_url, http_get_params)
         search_results = self.__parse_page(html_doc)
         return search_results
+         
