@@ -2,6 +2,8 @@ import re
 import nltk
 import gadata
 import scraper
+import strings
+import requests
 
 class QueryProcessor:
     
@@ -30,24 +32,21 @@ class QueryProcessor:
                 Example: 4 GB becomes 4096 MB.        
         """
         
-#         named_entities = gadata.named_entities
-#         for ne in named_entities: 
-#             query = re.sub(r"\b" + ne + r"\b", ne.title(), query)
         query = re.sub(r"\"", r"inch", query)
         query = re.sub(r"(\d+(.\d+)?)\s*", r"\1 ", query)
         query = re.sub(r"\bi\b", r"I", query)
         query = re.sub(r"(\d+)\s*(gb|gig\w*)", 
-                       lambda match: '{} MB'.format(int(match.group(1)) * 1024), 
+                       lambda match: '{} MB'.format(int(match.group(1)) * 1000), 
                        query, flags=re.IGNORECASE)
 
 #         query = self.__spellcheck(query)        
         
-        return query            
+        return query
     
     def __postag_query(self, query):
         """Use default nltk part-of-speech tagger to tag user query."""
         
-        tagged_query = nltk.pos_tag(nltk.word_tokenize(query))
+        tagged_query = nltk.pos_tag(nltk.word_tokenize(query))        
         return tagged_query
     
     def __parse_query(self, tagged_query, np_grammar):
@@ -118,7 +117,7 @@ class QueryProcessor:
         """
         
         parameters = {}
-                
+        print noun_phrases                
         params = gadata.parameters
         for noun_phrase in noun_phrases:
             np = noun_phrase.leaves()
@@ -153,15 +152,7 @@ class QueryProcessor:
                                 if match:
                                     parameters[reference] = match.group(0)
                                     break                                                                           
-
-                            if 'pos' in param:
-                                # if pos in tags
-                                for pos in param['pos']:
-                                    if pos in tags:
-                                        lingvar = tokens[tags.index(pos)]
-                                        parameters[reference] = lingvar
-    #                             break
-
+                            
                             if 'values' in param:
                                 if param['type'] == 'radio':
                                     parameters[reference] = str(param['values']['yes'])
@@ -170,17 +161,42 @@ class QueryProcessor:
                                         if val in tokens:
                                             parameters[reference] = str(param['values'][val])
                                             break
-                            
+                                            
+                            if 'pos' in param:
+                                # if pos in tags
+                                lingvars = []
+                                for pos in param['pos']:
+                                    if pos in tags:
+                                        indices = [index for index, tag in enumerate(tags) if tag == pos]
+                                        print indices
+                                        for index in indices:
+                                            lingvars.append(tokens[tags.index(pos)])
+                                parameters[reference] = ' '.join(lingvars)
+                                if 'range' in param:
+                                    parameters[reference] = self.__resolve_text(' '.join(lingvars), param['range'])                
             print tokens
             print tags
             print
             
         return parameters
     
-    def __resolve_params(self, parameters):
-        """Resolve linguistic variables in parameters to explicit values."""
+    def __resolve_text(self, text, range_obj):
+        """Resolve linguistic variables in parameters to explicit values using sentiment analysis."""
         
-        return parameters
+        if not text.strip():
+            positiveness = 0.5
+        else:
+            http_post_params = {'text': text}
+            res = requests.post(strings.SENTIMENT_ENDPOINT, http_post_params)
+            data = res.json()
+            positiveness = data['probability']['pos']
+        
+        max_ = range_obj['max']
+        min_ = range_obj['min']
+        range_ = max_ - min_
+        
+        resolved_value = int((positiveness * range_) + min_)
+        return resolved_value
         
     def __phone_search(self, parameters):
         """Call GSMArena scraper."""
@@ -196,6 +212,6 @@ class QueryProcessor:
         noun_phrases = self.__extract_NPs(query)
         parameters = self.__extract_parameters(noun_phrases)
         print(parameters)
-        parameters = self.__resolve_params(parameters)
+#         parameters = self.__resolve_params(parameters)
         phones = self.__phone_search(parameters)
         return phones

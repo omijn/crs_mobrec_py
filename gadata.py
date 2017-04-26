@@ -62,7 +62,11 @@ parameters = [{
     'reference_identifiers': ['ram', 'memory', 'main memory'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 16,
+        'max': 8000
+    }
 },
 {    
     'reference': 'nIntMemMin',
@@ -70,7 +74,11 @@ parameters = [{
     'reference_identifiers': ['internal memory', 'storage', 'storage space', 'storage size', 'capacity'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 64,
+        'max': 118000
+    }
 },
 {
     'reference': 'idCardslot',
@@ -87,7 +95,11 @@ parameters = [{
     'reference_identifiers': ['resolution'],    
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 76800,
+        'max': 3686400
+    }    
 },
 {
     'reference': 'fDisplayInchesMin',
@@ -95,7 +107,11 @@ parameters = [{
     'reference_identifiers': ['screen', 'screen size', 'inch'],
     'pos': ['JJ'],
     'type': 'float',
-    'pattern': r'\d(\.\d)?'
+    'pattern': r'\d(\.\d)?',
+    'range': {
+        'min': 2,
+        'max': 6
+    }
 },
 {
     'reference': 'nDisplayDensityMin',
@@ -103,7 +119,11 @@ parameters = [{
     'reference_identifiers': ['pixel density', 'display density', 'screen density', 'ppi'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 100,
+        'max': 700
+    }
 },
 {
     'reference': 'sDisplayTechs',
@@ -128,9 +148,13 @@ parameters = [{
     'reference': 'nCamPrimMin',
     'category': 'general',
     'reference_identifiers': ['camera', 'primary camera', 'back camera', 'rear camera', 'main camera'],    
-    'pos': ['JJ'],
+    'pos': ['RB', 'JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 2,
+        'max': 20
+    }
 },
 {
     'reference': 'nCamSecMin',
@@ -138,7 +162,11 @@ parameters = [{
     'reference_identifiers': ['secondary camera', 'front camera', 'selfie camera'],
     'pos': ['JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 1,
+        'max': 16
+    }
 },
 {
     'reference': 'chkFrontflash',
@@ -242,7 +270,11 @@ parameters = [{
     'reference_identifiers': ['battery', 'battery capacity', 'battery life'],
     'pos': ['RB', 'JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 600,
+        'max': 5000
+    }
 },
 {
     'reference': 'idBatRemovable',

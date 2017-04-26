@@ -8,6 +8,9 @@ GA_PHONEFINDER_URL = 'http://www.gsmarena.com/results.php3'
 # beautiful soup
 HTML_PARSER = 'html.parser'
 
+# text-processing.com API
+SENTIMENT_ENDPOINT = 'http://text-processing.com/api/sentiment/'
+
 # api.ai
 DEVICEINFO_INTENT = 'Request Device Specs'
 SEARCHPHONE_INTENT = 'Constrain'
