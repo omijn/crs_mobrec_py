@@ -29,10 +29,8 @@ class Scraper:
         soup = bs4.BeautifulSoup(html_doc, Scraper.html_parser_type)
         if soup.find(class_="makers"): 
             raw_html_results = soup.find(class_="makers").ul.find_all("li")            
-        else:         
-            return vars(responses.ApiAiResponse())
-        
-        #     issue: some searches go directly to the device info page, invalidating the above html parsing: eg. nexus 6p
+#         else:         
+#             return vars(responses.ApiAiResponse())
         
         phones = []
         for result in raw_html_results[:3]:
@@ -43,14 +41,11 @@ class Scraper:
             phone['name'] = re.sub(r'\<\/?br\>', ' ', ''.join(str(element) for element in result.a.span.contents)).strip()
             phones.append(phone)
         
-        response = responses.ApiAiResponse()
-        response.set(phones)                        
-                        
-        return response.get()
+        return phones
     
     def ga_quicksearch(self, phone):
         """Fetch device information from GSMArena.com using the regular search bar search."""
-        
+                
         http_get_params = {Scraper.ga_qs_param1: 'yes', Scraper.ga_qs_param2: phone}
         html_doc = self.__fetch_page(Scraper.ga_qs_url, http_get_params)
         search_results = self.__parse_page(html_doc)

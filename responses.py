@@ -1,14 +1,65 @@
 import json
+import pymongo
+import pprint
+
+class DBClient:
+    def __init__(self):
+        self.client = pymongo.MongoClient()
+        self.db = self.client['crs']
+        self.coll = self.db['responses']
+    
+    def insert(self, search_results, current_index, session_id):
+        self.coll.update_one(
+            {
+                'session_id': session_id
+            },
+            {
+                '$set':
+                    {
+                        'session_id': session_id,
+                        'search_results': search_results,
+                        'current_index': current_index
+                    }
+            },
+            upsert=True
+        )
+        
+    def find_update_increment(self, increment, session_id):
+        print("I am going to increment/decrement")
+        doc = self.coll.find_one({'session_id': session_id})
+        pprint.pprint(doc)
+        new_index = (doc['current_index'] + increment) % len(doc['search_results'])
+        print("New index", new_index)
+        doc = self.coll.update_one(
+            {
+                'session_id': session_id
+            },
+            {   
+                '$set':
+                    {
+                        'current_index': new_index                    
+                    }
+            }
+        )
+        print(doc)
+        
+    def fetch(self, session_id):
+        doc = self.coll.find_one({'session_id': session_id})
+        print(doc)
+        return doc
 
 class ApiAiResponse:
     
+    dbc = DBClient()
+    
     def __init__(self):
-        self.phones = []
+        self.search_results = []
+        self.session_id = 0
         self.current_index = 0
         self.speech = 'No results found.',
         self.displayText = 'No results found.',
         self.data = {},
-        self.source = 'GSMArena'        
+        self.source = 'GSMArena'
     
     def set_speech(self, speech):
         self.speech = speech
@@ -39,15 +90,15 @@ class ApiAiResponse:
                 "url": link,
                 "text": displayText
             },
-    #         "telegram": {
+            "telegram": {
 
-    #         }
+            }
         }
         
-    def __create_response(self):
+    def __create_response(self, search_results, current_index):
         """Build api.ai response"""                
         
-        current_result = self.phones[self.current_index]
+        current_result = search_results[current_index]
                 
         speech = current_result['name'] + "\n\n" + current_result['description']
         displayText = current_result['name'] + "\n\n" + current_result['description']
@@ -57,27 +108,32 @@ class ApiAiResponse:
         self.set_display_text(displayText)
         self.set_data(displayText, link)
     
-    def next(self):
+    def next(self, session_id):
         """Switch to next phone result."""
         
-        self.current_index = (self.current_index + 1) % len(self.phones)
+        self.dbc.find_update_increment(1, session_id)        
     
-    def prev(self):
+    def prev(self, session_id):
         """Switch to previous phone result."""
         
-        self.current_index = (self.current_index - 1) % len(self.phones)
+        self.dbc.find_update_increment(-1, session_id)
         
-    def set(self, phones):
-        """Store phone search results (either quicksearch/phone finder) in response object."""
+    def set(self, search_results, session_id):
+        """Store phone search results (either quicksearch/phone finder) in response object and database."""
         
-        self.phones = phones
+        self.search_results = search_results
         self.current_index = 0
+                
+        self.dbc.insert(search_results, self.current_index, session_id)
     
-    def get(self):
+    def get(self, session_id):
         """Return object containing only api.ai key-value pairs."""
         
-        if self.phones:
-            self.__create_response()
+        doc = self.dbc.fetch(session_id)
+        search_results = doc['search_results']
+        current_index = doc['current_index']
+                
+        self.__create_response(search_results, current_index)
             
         obj = {
             'speech': self.speech,

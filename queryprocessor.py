@@ -32,7 +32,7 @@ class QueryProcessor:
                 Example: 4 GB becomes 4096 MB.        
         """
         
-        query = re.sub(r"\"", r"inch", query)
+        query = re.sub(r"(\d(\.\d)?)\s*\"", r"\1inch", query)
         query = re.sub(r"(\d+(.\d+)?)\s*", r"\1 ", query)
         query = re.sub(r"\bi\b", r"I", query)
         query = re.sub(r"(\d+)\s*(gb|gig\w*)", 
@@ -196,14 +196,7 @@ class QueryProcessor:
         range_ = max_ - min_
         
         resolved_value = int((positiveness * range_) + min_)
-        return resolved_value
-        
-    def __phone_search(self, parameters):
-        """Call GSMArena scraper."""
-        
-        sc = scraper.Scraper()
-        phones = sc.ga_phone_finder(parameters)
-        return phones
+        return resolved_value        
       
     def process(self, query):
         """Main class method."""
@@ -212,6 +205,4 @@ class QueryProcessor:
         noun_phrases = self.__extract_NPs(query)
         parameters = self.__extract_parameters(noun_phrases)
         print(parameters)
-#         parameters = self.__resolve_params(parameters)
-        phones = self.__phone_search(parameters)
-        return phones
+        return parameters

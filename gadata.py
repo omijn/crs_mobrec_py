@@ -40,7 +40,7 @@ parameters = [{
     'reference': 'nCpuMHzMin',
     'category': 'general',
     'reference_identifiers': ['processor', 'cpu'],    
-    'pos': ['JJ', 'RB'],
+    'pos': ['RB', 'JJ'],
     'type': 'integer',
     'pattern': r'\d+'
 },
