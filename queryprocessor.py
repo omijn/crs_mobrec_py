@@ -1,3 +1,4 @@
+import pprint
 import re
 import nltk
 import gadata
@@ -117,7 +118,8 @@ class QueryProcessor:
         """
         
         parameters = {}
-        print noun_phrases                
+        pprint.pprint(noun_phrases)
+        print
         params = gadata.parameters
         for noun_phrase in noun_phrases:
             np = noun_phrase.leaves()
@@ -162,13 +164,12 @@ class QueryProcessor:
                                             parameters[reference] = str(param['values'][val])
                                             break
                                             
-                            if 'pos' in param:
-                                # if pos in tags
+                            if 'pos' in param:                                
                                 lingvars = []
                                 for pos in param['pos']:
                                     if pos in tags:
                                         indices = [index for index, tag in enumerate(tags) if tag == pos]
-                                        print indices
+                                        print("Linguistic variables detected at position(s) %s" % indices)
                                         for index in indices:
                                             lingvars.append(tokens[tags.index(pos)])
                                 parameters[reference] = ' '.join(lingvars)
@@ -204,5 +205,5 @@ class QueryProcessor:
         query = self.__preprocess(query)
         noun_phrases = self.__extract_NPs(query)
         parameters = self.__extract_parameters(noun_phrases)
-        print(parameters)
+        print("Parameters: %s" % parameters)
         return parameters

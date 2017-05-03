@@ -19,7 +19,7 @@ class Scraper:
         """Perform a search for the given phone and obtain the search result page."""
                 
         res = requests.get(url, http_get_params)
-        print res.url
+        print("HTTP GET %s" % res.url)
         html_doc = res.text
         return html_doc
     
@@ -45,7 +45,8 @@ class Scraper:
     
     def ga_quicksearch(self, phone):
         """Fetch device information from GSMArena.com using the regular search bar search."""
-                
+        
+        print("Phone: %s" % phone)
         http_get_params = {Scraper.ga_qs_param1: 'yes', Scraper.ga_qs_param2: phone}
         html_doc = self.__fetch_page(Scraper.ga_qs_url, http_get_params)
         search_results = self.__parse_page(html_doc)

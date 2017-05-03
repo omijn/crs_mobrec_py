@@ -1,14 +1,17 @@
 import json
 import pymongo
-import pprint
 
 class DBClient:
+    """MongoDB client"""
+    
     def __init__(self):
         self.client = pymongo.MongoClient()
         self.db = self.client['crs']
         self.coll = self.db['responses']
     
     def insert(self, search_results, current_index, session_id):
+        """Upsert a new set of search results after a service request is made by a particular user."""
+        
         self.coll.update_one(
             {
                 'session_id': session_id
@@ -25,11 +28,10 @@ class DBClient:
         )
         
     def find_update_increment(self, increment, session_id):
-        print("I am going to increment/decrement")
-        doc = self.coll.find_one({'session_id': session_id})
-        pprint.pprint(doc)
-        new_index = (doc['current_index'] + increment) % len(doc['search_results'])
-        print("New index", new_index)
+        """Increment or decrement the current index (result to be displayed) of the list of search results. """
+        
+        doc = self.coll.find_one({'session_id': session_id})        
+        new_index = (doc['current_index'] + increment) % len(doc['search_results'])        
         doc = self.coll.update_one(
             {
                 'session_id': session_id
@@ -40,12 +42,12 @@ class DBClient:
                         'current_index': new_index                    
                     }
             }
-        )
-        print(doc)
+        )        
         
     def fetch(self, session_id):
-        doc = self.coll.find_one({'session_id': session_id})
-        print(doc)
+        """Retrieve search results for a particular user."""
+        
+        doc = self.coll.find_one({'session_id': session_id})        
         return doc
 
 class ApiAiResponse:
@@ -62,12 +64,18 @@ class ApiAiResponse:
         self.source = 'GSMArena'
     
     def set_speech(self, speech):
+        """Speech setter method."""
+        
         self.speech = speech
 
     def set_display_text(self, displayText):
+        """Display text setter method."""
+        
         self.displayText = displayText
     
     def set_data(self, displayText, link):
+        """Data setter method."""
+        
         self.data = {
             "facebook": {
                 "attachment": {
@@ -90,9 +98,9 @@ class ApiAiResponse:
                 "url": link,
                 "text": displayText
             },
-            "telegram": {
+#             "telegram": {
 
-            }
+#             }
         }
         
     def __create_response(self, search_results, current_index):

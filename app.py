@@ -20,6 +20,8 @@ def handler():
     phone = req_body['result']['parameters']['phone'] if 'phone' in req_body['result']['parameters'] else ''
     intent = req_body['result']['metadata']['intentName']
     session_id = req_body['sessionId']
+    print("Query: %s" % query)
+    print("Intent: %s" % intent)
     
     if intent == strings.DEVICEINFO_INTENT:
         search_results = sc.ga_quicksearch(phone)

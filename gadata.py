@@ -42,7 +42,11 @@ parameters = [{
     'reference_identifiers': ['processor', 'cpu'],    
     'pos': ['RB', 'JJ'],
     'type': 'integer',
-    'pattern': r'\d+'
+    'pattern': r'\d+',
+    'range': {
+        'min': 1000,
+        'max': 2500
+    }
 },
 {
     'reference': 'nCPUCoresMin',
